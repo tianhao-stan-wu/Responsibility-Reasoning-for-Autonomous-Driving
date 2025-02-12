@@ -740,6 +740,7 @@ def game_loop(args):
         destination = random.choice(spawn_points).location
         agent.set_destination(destination)
 
+
         clock = pygame.time.Clock()
 
         while True:
@@ -767,6 +768,7 @@ def game_loop(args):
             control = agent.run_step()
             control.manual_gear_shift = False
             world.player.apply_control(control)
+
 
     finally:
 

@@ -1,0 +1,10 @@
+1. generate_traffic.py
+	- can set params such as # vehicles/walkers, speed, etc.
+
+2. automatic_cotrol.py
+	- can choose agent behavior types (normal/agressive/cautious)
+	- set CameraManager.recording = True to save rgb camera images to disk
+		issue: the pygame GUI stuck while the simulation continues bc saving image takes time
+	- in Hub.tick()
+		vehicles = [(dist(x.get_location()), x) for x in vehicles if x.id != world.player.id]
+		stores distance of each vehicle to the ego
