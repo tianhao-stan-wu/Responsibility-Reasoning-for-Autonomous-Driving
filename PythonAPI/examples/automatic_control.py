@@ -268,6 +268,7 @@ class HUD(object):
         self._show_info = True
         self._info_text = []
         self._server_clock = pygame.time.Clock()
+        self._dist = []
 
     def on_world_tick(self, timestamp):
         """Gets informations from the world at every tick"""
@@ -336,11 +337,13 @@ class HUD(object):
                              ** 2 + (l.z - transform.location.z)**2)
         vehicles = [(dist(x.get_location()), x) for x in vehicles if x.id != world.player.id]
 
+        self._dist = []
         for dist, vehicle in sorted(vehicles):
             if dist > 200.0:
                 break
             vehicle_type = get_actor_display_name(vehicle, truncate=22)
             self._info_text.append('% 4dm %s' % (dist, vehicle_type))
+            self._dist.append('% 4dm %s' % (dist, vehicle_type))
 
     def toggle_info(self):
         """Toggle info on or off"""
@@ -745,11 +748,15 @@ def game_loop(args):
         clock = pygame.time.Clock()
 
         # add image queue to resolve sync issues when saving imgs
-        camera_init_trans = carla.Transform(carla.Location(z=1.5))
+        # camera_init_trans = carla.Transform(carla.Location(z=1.5))
+        camera_init_trans = world.camera_manager._camera_transforms[0][0]
         camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
         camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
         image_queue = queue.Queue()
-        camera.listen(image_queue.put)
+
+        count = 0
+        start_tick = 30
+        end_tick = 40
 
         while True:
             clock.tick()
@@ -760,9 +767,21 @@ def game_loop(args):
             if controller.parse_events():
                 return
 
-            # save instance rgb image to disk
-            image = image_queue.get()
-            image.save_to_disk('out/%06d.png' % image.frame)
+            count += 1
+            if count == start_tick:
+                camera.listen(image_queue.put)
+            if start_tick <= count < end_tick:
+                # save instance rgb image to disk
+                image = image_queue.get()
+                image.save_to_disk('out/%06d.png' % image.frame)
+                dist_info = world.hud._dist
+                print("tick:", count)
+                for item in dist_info:
+                    print(item)
+                print("*********************************")
+
+            if count == end_tick:
+                camera.destroy()
 
             world.tick(clock)
             world.render(display)
