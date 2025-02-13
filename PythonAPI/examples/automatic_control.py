@@ -18,6 +18,7 @@ import numpy.random as random
 import re
 import sys
 import weakref
+import queue
 
 try:
     import pygame
@@ -743,6 +744,13 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
+        # add image queue to resolve sync issues when saving imgs
+        camera_init_trans = carla.Transform(carla.Location(z=1.5))
+        camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
+        camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
+        image_queue = queue.Queue()
+        camera.listen(image_queue.put)
+
         while True:
             clock.tick()
             if args.sync:
@@ -751,6 +759,10 @@ def game_loop(args):
                 world.world.wait_for_tick()
             if controller.parse_events():
                 return
+
+            # save instance rgb image to disk
+            image = image_queue.get()
+            image.save_to_disk('out/%06d.png' % image.frame)
 
             world.tick(clock)
             world.render(display)
