@@ -751,6 +751,9 @@ def game_loop(args):
         # camera_init_trans = carla.Transform(carla.Location(z=1.5))
         camera_init_trans = world.camera_manager._camera_transforms[0][0]
         camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
+        camera_bp.set_attribute("image_size_x",str(1920))
+        camera_bp.set_attribute("image_size_y",str(1080))
+        camera_bp.set_attribute("fov",str(105))
         camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
         image_queue = queue.Queue()
 
