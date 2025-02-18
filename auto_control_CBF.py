@@ -13,7 +13,6 @@
 import argparse
 import collections
 import datetime
-import logging
 import math
 import os
 import numpy.random as random
@@ -39,8 +38,9 @@ except ImportError:
 # ==============================================================================
 # -- Add PythonAPI for release mode --------------------------------------------
 # ==============================================================================
+
 try:
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)) + 'PythonAPI/carla')
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/PythonAPI/carla')
 except IndexError:
     pass
 
@@ -743,6 +743,7 @@ def game_loop(args):
 
         # Set the agent destination
         spawn_points = world.map.get_spawn_points()
+        
         destination = random.choice(spawn_points).location
         agent.set_destination(destination)
 
@@ -751,17 +752,17 @@ def game_loop(args):
 
         # add image queue to resolve sync issues when saving imgs
         # camera_init_trans = carla.Transform(carla.Location(z=1.5))
-        camera_init_trans = world.camera_manager._camera_transforms[0][0]
-        camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
-        camera_bp.set_attribute("image_size_x",str(1920))
-        camera_bp.set_attribute("image_size_y",str(1080))
-        camera_bp.set_attribute("fov",str(105))
-        camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
-        image_queue = queue.Queue()
+        # camera_init_trans = world.camera_manager._camera_transforms[0][0]
+        # camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
+        # camera_bp.set_attribute("image_size_x",str(1920))
+        # camera_bp.set_attribute("image_size_y",str(1080))
+        # camera_bp.set_attribute("fov",str(105))
+        # camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
+        # image_queue = queue.Queue()
 
-        count = 0
-        start_tick = 30
-        end_tick = 40
+        # count = 0
+        # start_tick = 30
+        # end_tick = 40
 
         while True:
             clock.tick()
@@ -772,21 +773,21 @@ def game_loop(args):
             if controller.parse_events():
                 return
 
-            count += 1
-            if count == start_tick:
-                camera.listen(image_queue.put)
-            if start_tick <= count < end_tick:
-                # save instance rgb image to disk
-                image = image_queue.get()
-                image.save_to_disk('out/%06d.png' % image.frame)
-                dist_info = world.hud._dist
-                print("tick:", count)
-                for item in dist_info:
-                    print(item)
-                print("*********************************")
+            # count += 1
+            # if count == start_tick:
+            #     camera.listen(image_queue.put)
+            # if start_tick <= count < end_tick:
+            #     # save instance rgb image to disk
+            #     image = image_queue.get()
+            #     image.save_to_disk('out/%06d.png' % image.frame)
+            #     dist_info = world.hud._dist
+            #     print("tick:", count)
+            #     for item in dist_info:
+            #         print(item)
+            #     print("*********************************")
 
-            if count == end_tick:
-                camera.destroy()
+            # if count == end_tick:
+            #     camera.destroy()
 
             world.tick(clock)
             world.render(display)
@@ -826,7 +827,7 @@ def game_loop(args):
 
 
 def main():
-    """Main method"""
+
 
     argparser = argparse.ArgumentParser(
         description='CARLA Automatic Control Client')
@@ -858,7 +859,7 @@ def main():
         "-a", "--agent", type=str, choices=["Behavior", "Basic", "Constant"], default="Behavior",
         help="select which agent to run")
     argparser.add_argument(
-        '-b', '--behavior', type=str, choices=["cautious", "normal", "aggressive"], default='normal',
+        '-b', '--behavior', type=str, choices=["cautious", "normal", "aggressive", "deadly"], default='deadly',
         help='Choose one of the possible agent behaviors (default: normal)')
     argparser.add_argument(
         '-s', '--seed', default=None, type=int,
@@ -867,13 +868,6 @@ def main():
     args = argparser.parse_args()
 
     args.width, args.height = [int(x) for x in args.res.split('x')]
-
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
-
-    logging.info('listening to server %s:%s', args.host, args.port)
-
-    print(__doc__)
 
     try:
         game_loop(args)

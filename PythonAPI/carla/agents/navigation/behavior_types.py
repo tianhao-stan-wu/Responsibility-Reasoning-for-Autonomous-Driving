@@ -35,3 +35,16 @@ class Aggressive(object):
     min_proximity_threshold = 8
     braking_distance = 4
     tailgate_counter = -1
+
+
+class Deadly(object):
+    """Class for Aggressive agent."""
+    max_speed = 100
+    speed_lim_dist = -10
+    speed_decrease = 5
+    safety_time = 2
+    min_proximity_threshold = 4
+    braking_distance = 2
+    tailgate_counter = -1
+
+
