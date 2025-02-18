@@ -1,29 +1,8 @@
-1. generate_traffic.py
+Commands:
+
+python3 PythonAPI/util/config.py --map Town10
+
+python3 PythonAPI/examples/generate_traffic.py
 	- can set params such as # vehicles/walkers, speed, etc.
 
-2. automatic_cotrol.py
-	- can choose agent behavior types (normal/agressive/cautious)
-	- set CameraManager.recording = True to save rgb camera images to disk
-		issue: the pygame GUI stuck while the simulation continues bc saving image takes time
-	- in Hub.tick()
-		vehicles = [(dist(x.get_location()), x) for x in vehicles if x.id != world.player.id]
-		stores distance of each vehicle to the ego.
-
-
-Driving scene characteristics:
-1. # of pedestrians
-	- few
-	- moderate
-	- many
-2. # of lanes
-	- 1
-	- 2
-	- >=3
-3. traffic
-	- heavy
-	- medium
-	- light
-4. visibility
-	- high
-	- medium
-	- low
+create a very aggressive agent and test whether it collides

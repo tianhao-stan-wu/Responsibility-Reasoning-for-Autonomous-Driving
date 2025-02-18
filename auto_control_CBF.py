@@ -8,6 +8,8 @@
 
 """Example of automatic vehicle control from client side, with a python defined agent"""
 
+# Adapted by Tianhao Wu to include CBF
+
 import argparse
 import collections
 import datetime
@@ -38,7 +40,7 @@ except ImportError:
 # -- Add PythonAPI for release mode --------------------------------------------
 # ==============================================================================
 try:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/carla')
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)) + 'PythonAPI/carla')
 except IndexError:
     pass
 
