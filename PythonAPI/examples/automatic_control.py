@@ -741,9 +741,7 @@ def game_loop(args):
         destination = random.choice(spawn_points).location
         agent.set_destination(destination)
 
-
         clock = pygame.time.Clock()
-
 
         while True:
             clock.tick()
@@ -753,9 +751,6 @@ def game_loop(args):
                 world.world.wait_for_tick()
             if controller.parse_events():
                 return
-
-            if count == end_tick:
-                camera.destroy()
 
             world.tick(clock)
             world.render(display)
