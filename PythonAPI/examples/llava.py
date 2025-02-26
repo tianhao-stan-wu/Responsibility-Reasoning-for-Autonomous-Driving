@@ -15,7 +15,7 @@ conversation = [
         "role": "user",
         "content": [
             {"type": "image"},
-            {"type": "text", "text": "What does safety mean in this driving situation? What are safety distances to keep with each surrounding agent, given 27m Ford Crown, 27m Bmw Grandtourer, 34m Bh Crossbike, 46m Kawasaki Ninja, 51m Bh Crossbike 52m Yamaha Yzf?"},
+            {"type": "text", "text": "What does safety mean in this driving situation?"},
         ],
     },
 ]
@@ -23,6 +23,6 @@ prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
 inputs = processor(image, prompt, return_tensors="pt").to("cuda:0")
 
 # autoregressively complete prompt
-output = model.generate(**inputs, max_new_tokens=100)
+output = model.generate(**inputs, max_new_tokens=1000)
 
 print(processor.decode(output[0], skip_special_tokens=True))
