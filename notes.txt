@@ -1,12 +1,12 @@
 brainstorm driving norms in different driving scenarios:
 
-easy to formulate: (constraint on control directly)
+easy to formulate: 
 Avoid Unnecessary Braking especially on highway or driving with high speed
-take turns at a stop or merge
-Don't Block the Intersection even if the light is green,
 avoid acceleration when being overtaken
-
-hard: (constraint on the state, using reachability)
-Stay in Your Lane After a Turn
 keep R_safe from other vehicles/pedestrians
+
+hard: 
+Stay in Your Lane After a Turn -> boundary of the road
 avoid side by side driving
+Don't Block the Intersection even if the light is green
+take turns at a stop or merge
