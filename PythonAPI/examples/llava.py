@@ -10,12 +10,27 @@ model.to("cuda:0")
 
 image = Image.open("out/004150.png")
 
+prompt = """
+When given instructions to finish some tasks, humans tend to reason in a hierarchical manner. Please decompose the natural language task description into a hierarchical structure based on logical relationships. 
+The task description is "How to ensure driving safety in this scenario?"
+
+Output Format:
+root task
+(1.1) summary of subtasks [task a, task c]
+    1.1.1. [task a]
+    1.1.2. [task c]
+(1.2) summary of subtasks [task b]
+    1.2.1. [task b]
+
+
+        """
+
 conversation = [
     {
         "role": "user",
         "content": [
             {"type": "image"},
-            {"type": "text", "text": "What does safety mean in this driving situation?"},
+            {"type": "text", "text": prompt},
         ],
     },
 ]
