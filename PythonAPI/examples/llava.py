@@ -11,17 +11,33 @@ model.to("cuda:0")
 image = Image.open("out/004150.png")
 
 prompt = """
-When given instructions to finish some tasks, humans tend to reason in a hierarchical manner. Please decompose the natural language task description into a hierarchical structure based on logical relationships. 
-The task description is "How to ensure driving safety in this scenario?"
+When given instructions to finish some tasks, humans tend to reason in a hierarchical manner. Please decompose the natural language task description into a hierarchical structure based on logical relationships.
+
+The root task is "How to ensure safety in this autonomous driving scenario?"
 
 Output Format:
-root task
+root task: 
 (1.1) summary of subtasks [task a, task c]
     1.1.1. [task a]
     1.1.2. [task c]
+    ...
 (1.2) summary of subtasks [task b]
     1.2.1. [task b]
+    ...
 
+Requirements:
+Your answer should only be based on things that you can perceive in this driving scenario. You should not make any broad statements that are not related to the scene.
+Provide concrete tasks that can be executed by 
+
+
+
+Example output:
+How to ensure driving safety in this scenario?
+(1.1) avoid collision with other vehicles
+    1.1.1 avoid collision with vehicle A
+    1.1.2 avoid collision with vehicle B
+    ...
+(1.2) 
 
         """
 

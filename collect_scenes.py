@@ -8,8 +8,6 @@
 
 """Example of automatic vehicle control from client side, with a python defined agent"""
 
-# Adapted by Tianhao Wu to include CBF
-
 import argparse
 import collections
 import datetime
@@ -70,29 +68,29 @@ def get_actor_display_name(actor, truncate=250):
     name = ' '.join(actor.type_id.replace('_', '.').title().split('.')[1:])
     return (name[:truncate - 1] + u'\u2026') if len(name) > truncate else name
 
-def get_actor_blueprints(world, filter, generation):
-    bps = world.get_blueprint_library().filter(filter)
+# def get_actor_blueprints(world, filter, generation):
+#     bps = world.get_blueprint_library().filter(filter)
 
-    if generation.lower() == "all":
-        return bps
+#     if generation.lower() == "all":
+#         return bps
 
-    # If the filter returns only one bp, we assume that this one needed
-    # and therefore, we ignore the generation
-    if len(bps) == 1:
-        return bps
+#     # If the filter returns only one bp, we assume that this one needed
+#     # and therefore, we ignore the generation
+#     if len(bps) == 1:
+#         return bps
 
-    try:
-        int_generation = int(generation)
-        # Check if generation is in available generations
-        if int_generation in [1, 2, 3]:
-            bps = [x for x in bps if int(x.get_attribute('generation')) == int_generation]
-            return bps
-        else:
-            print("   Warning! Actor Generation is not valid. No actor will be spawned.")
-            return []
-    except:
-        print("   Warning! Actor Generation is not valid. No actor will be spawned.")
-        return []
+#     try:
+#         int_generation = int(generation)
+#         # Check if generation is in available generations
+#         if int_generation in [1, 2, 3]:
+#             bps = [x for x in bps if int(x.get_attribute('generation')) == int_generation]
+#             return bps
+#         else:
+#             print("   Warning! Actor Generation is not valid. No actor will be spawned.")
+#             return []
+#     except:
+#         print("   Warning! Actor Generation is not valid. No actor will be spawned.")
+#         return []
 
 # ==============================================================================
 # -- World ---------------------------------------------------------------
@@ -120,8 +118,8 @@ class World(object):
         self.camera_manager = None
         self._weather_presets = find_weather_presets()
         self._weather_index = 0
-        self._actor_filter = args.filter
-        self._actor_generation = args.generation
+        # self._actor_filter = args.filter
+        # self._actor_generation = args.generation
         self.restart(args)
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
@@ -134,13 +132,21 @@ class World(object):
         cam_pos_id = self.camera_manager.transform_index if self.camera_manager is not None else 0
 
         # Get a random blueprint.
-        blueprint_list = get_actor_blueprints(self.world, self._actor_filter, self._actor_generation)
-        if not blueprint_list:
-            raise ValueError("Couldn't find any blueprints with the specified filters")
-        blueprint = random.choice(blueprint_list)
+        # blueprint_list = get_actor_blueprints(self.world, self._actor_filter, self._actor_generation)
+        # if not blueprint_list:
+            # raise ValueError("Couldn't find any blueprints with the specified filters")
+
+        # choose a fixed vehicle blueprint instead of a random one
+        blueprint_library = world.get_blueprint_library()
+        blueprint = blueprint_library.find('vehicle.tesla.model3')
+
         blueprint.set_attribute('role_name', 'hero')
         if blueprint.has_attribute('color'):
-            color = random.choice(blueprint.get_attribute('color').recommended_values)
+            choices = blueprint.get_attribute('color').recommended_values
+            print("recommended_values for color:")
+            for item in choices:
+                print(item)
+            color = choices[0]
             blueprint.set_attribute('color', color)
 
         # Spawn the player.
@@ -704,29 +710,31 @@ def game_loop(args):
     pygame.font.init()
     world = None
 
-    try:
-        if args.seed:
-            random.seed(args.seed)
+    # define params here
+    width = 1280
+    height = 720
 
-        client = carla.Client(args.host, args.port)
+    try:
+
+        client = carla.Client("127.0.0.1", 2000)
         client.set_timeout(60.0)
 
         traffic_manager = client.get_trafficmanager()
         sim_world = client.get_world()
 
-        if args.sync:
-            settings = sim_world.get_settings()
-            settings.synchronous_mode = True
-            settings.fixed_delta_seconds = 0.05
-            sim_world.apply_settings(settings)
+        # set to synchronous model to resolve slow client
+        settings = sim_world.get_settings()
+        settings.synchronous_mode = True
+        settings.fixed_delta_seconds = 0.05
+        sim_world.apply_settings(settings)
 
-            traffic_manager.set_synchronous_mode(True)
+        traffic_manager.set_synchronous_mode(True)
 
         display = pygame.display.set_mode(
-            (args.width, args.height),
+            (width, height),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
-        hud = HUD(args.width, args.height)
+        hud = HUD(width, height)
         world = World(client.get_world(), hud, args)
         controller = KeyboardControl(world)
         if args.agent == "Basic":
@@ -751,18 +759,16 @@ def game_loop(args):
         clock = pygame.time.Clock()
 
         # add image queue to resolve sync issues when saving imgs
-        # camera_init_trans = carla.Transform(carla.Location(z=1.5))
-        # camera_init_trans = world.camera_manager._camera_transforms[0][0]
-        # camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
-        # camera_bp.set_attribute("image_size_x",str(1920))
-        # camera_bp.set_attribute("image_size_y",str(1080))
+        camera_init_trans = carla.Transform(carla.Location(z=1.5))
+        camera_init_trans = world.camera_manager._camera_transforms[0][0]
+        camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
+        camera_bp.set_attribute("image_size_x",str(args.res_h))
+        camera_bp.set_attribute("image_size_y",str(args.res_w))
         # camera_bp.set_attribute("fov",str(105))
-        # camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
-        # image_queue = queue.Queue()
+        camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
+        image_queue = queue.Queue()
 
-        # count = 0
-        # start_tick = 30
-        # end_tick = 40
+        count = 0
 
         while True:
             clock.tick()
@@ -773,21 +779,17 @@ def game_loop(args):
             if controller.parse_events():
                 return
 
-            # count += 1
-            # if count == start_tick:
-            #     camera.listen(image_queue.put)
-            # if start_tick <= count < end_tick:
-            #     # save instance rgb image to disk
-            #     image = image_queue.get()
-            #     image.save_to_disk('out/%06d.png' % image.frame)
-            #     dist_info = world.hud._dist
-            #     print("tick:", count)
-            #     for item in dist_info:
-            #         print(item)
-            #     print("*********************************")
+            # capture image every 10 seconds
+            if count % (10 / settings.fixed_delta_seconds) == 0:
+                # save instance rgb image to disk
+                camera.listen(image_queue.put)
+                image = image_queue.get()
+                image.save_to_disk('out/tesla_model3/%06d.png' % image.frame)
+                camera.stop()
 
-            # if count == end_tick:
-            #     camera.destroy()
+                world.next_weather()
+
+            count += 1  
 
             world.tick(clock)
             world.render(display)
@@ -817,6 +819,7 @@ def game_loop(args):
             traffic_manager.set_synchronous_mode(True)
 
             world.destroy()
+            camera.destroy()
 
         pygame.quit()
 
@@ -832,27 +835,6 @@ def main():
     argparser = argparse.ArgumentParser(
         description='CARLA Automatic Control Client')
     argparser.add_argument(
-        '-v', '--verbose', action='store_true', dest='debug',
-        help='Print debug information')
-    argparser.add_argument(
-        '--host', metavar='H', default='127.0.0.1',
-        help='IP of the host server (default: 127.0.0.1)')
-    argparser.add_argument(
-        '-p', '--port', metavar='P', default=2000, type=int,
-        help='TCP port to listen to (default: 2000)')
-    argparser.add_argument(
-        '--res', metavar='WIDTHxHEIGHT', default='1280x720',
-        help='Window resolution (default: 1280x720)')
-    argparser.add_argument(
-        '--sync', action='store_true',
-        help='Synchronous mode execution')
-    argparser.add_argument(
-        '--filter', metavar='PATTERN', default='vehicle.*',
-        help='Actor filter (default: "vehicle.*")')
-    argparser.add_argument(
-        '--generation', metavar='G', default='All',
-        help='restrict to certain actor generation (values: "2","3","All" - default: "All")')
-    argparser.add_argument(
         '-l', '--loop', action='store_true', dest='loop',
         help='Sets a new random destination upon reaching the previous one (default: False)')
     argparser.add_argument(
@@ -862,12 +844,13 @@ def main():
         '-b', '--behavior', type=str, choices=["cautious", "normal", "aggressive", "deadly"], default='deadly',
         help='Choose one of the possible agent behaviors (default: normal)')
     argparser.add_argument(
-        '-s', '--seed', default=None, type=int,
-        help='Set seed for repeating executions (default: None)')
+        '-h', '--res_h', default='720',
+        help='camera image height')
+    argparser.add_argument(
+        '-w', '--res_w', default='1280',
+        help='camera image width')
 
     args = argparser.parse_args()
-
-    args.width, args.height = [int(x) for x in args.res.split('x')]
 
     try:
         game_loop(args)
