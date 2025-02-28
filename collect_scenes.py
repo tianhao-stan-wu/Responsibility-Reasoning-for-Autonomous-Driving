@@ -137,7 +137,7 @@ class World(object):
             # raise ValueError("Couldn't find any blueprints with the specified filters")
 
         # choose a fixed vehicle blueprint instead of a random one
-        blueprint_library = world.get_blueprint_library()
+        blueprint_library = self.world.get_blueprint_library()
         blueprint = blueprint_library.find('vehicle.tesla.model3')
 
         blueprint.set_attribute('role_name', 'hero')
@@ -844,11 +844,14 @@ def main():
         '-b', '--behavior', type=str, choices=["cautious", "normal", "aggressive", "deadly"], default='deadly',
         help='Choose one of the possible agent behaviors (default: normal)')
     argparser.add_argument(
-        '-h', '--res_h', default='720',
+        '-he', '--res_h', default='720',
         help='camera image height')
     argparser.add_argument(
-        '-w', '--res_w', default='1280',
+        '-wi', '--res_w', default='1280',
         help='camera image width')
+    argparser.add_argument(
+        '--sync', default=True,
+        help='Synchronous mode execution')
 
     args = argparser.parse_args()
 

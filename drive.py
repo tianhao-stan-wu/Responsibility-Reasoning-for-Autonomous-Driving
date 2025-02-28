@@ -24,7 +24,7 @@ import re
 import sys
 import weakref
 import queue
-import deque
+from collections import deque
 
 try:
     import pygame
@@ -44,7 +44,7 @@ except ImportError:
 # -- Add PythonAPI for release mode --------------------------------------------
 # ==============================================================================
 try:
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/carla')
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)) + '/PythonAPI/carla')
 except IndexError:
     pass
 
@@ -691,52 +691,28 @@ class CameraManager(object):
             image.save_to_disk('_out/%08d' % image.frame)
 
 
-def image_process():
+def image_process(model, processor, image):
     
-    processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf")
+    image.convert(cc.Raw)
+    image.save_to_disk('out/drive_test/%08d' % image.frame)
 
-    model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf", torch_dtype=torch.float16, low_cpu_mem_usage=True, load_in_4bit=True)
-    model.to("cuda:0")
+    image = Image.open('out/drive_test/%08d.png' % image.frame)
 
-    image = Image.open("out/cybertruck/004150.png")
+    question1 = "You are given an autonomous driving scene. Analyze whether the vehicle should accelerate or decelerate. Show your reasoning."
 
-    prompt = """
-    When given instructions to finish some tasks, humans tend to reason in a hierarchical manner. Please decompose the natural language task description into a hierarchical structure based on logical relationships.
-
-    The root task is "How to ensure safety in this autonomous driving scenario?"
-
-    Output Format:
-    root task: 
-    (1.1) summary of subtasks [task a, task c]
-        1.1.1. [task a]
-        1.1.2. [task c]
-        ...
-    (1.2) summary of subtasks [task b]
-        1.2.1. [task b]
-        ...
-
-    Requirements:
-    Your answer should only be based on things that you can perceive in this driving scenario. You should not make any broad statements that are not related to the scene.
-    Provide concrete tasks that can be executed by 
-
-
-
-    Example output:
-    How to ensure driving safety in this scenario?
-    (1.1) avoid collision with other vehicles
-        1.1.1 avoid collision with vehicle A
-        1.1.2 avoid collision with vehicle B
-        ...
-    (1.2) 
-
-            """
+    question2 = "Arrive at a conclusion of how to apply the brake or throttle in the range of [0,1] for the next 5 steps.Output should be in the format of throttle_list = [value1,value2,...,value5], brake_list = [value1,value2,...,value5]"
 
     conversation = [
         {
             "role": "user",
             "content": [
                 {"type": "image"},
-                {"type": "text", "text": prompt},
+                {"type": "text", "text": question1},
+            ],
+            "role": "user",
+            "content": [
+                {"type": "image"},
+                {"type": "text", "text": question2},
             ],
         },
     ]
@@ -773,10 +749,12 @@ def game_loop(args):
         traffic_manager = client.get_trafficmanager()
         sim_world = client.get_world()
 
+        delta_t = 0.05
+
         if args.sync:
             settings = sim_world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = 0.05
+            settings.fixed_delta_seconds = delta_t
             sim_world.apply_settings(settings)
 
             traffic_manager.set_synchronous_mode(True)
@@ -809,14 +787,23 @@ def game_loop(args):
 
         # init camera
         camera_init_trans = carla.Transform(carla.Location(z=1.5))
-        camera_init_trans = world.camera_manager._camera_transforms[0][0]
+        camera_init_trans = world.camera_manager._camera_transforms[1][0]
         camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
         camera_bp.set_attribute("image_size_x",str(1280))
         camera_bp.set_attribute("image_size_y",str(720))
         camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
         
-        image_deque = deque(maxlen=100)
-        camera.listen(image_deque.append)  
+        max_len = int(5/delta_t)
+        print("max_len", max_len)
+        image_deque = deque(maxlen=max_len)
+        camera.listen(image_deque.append)
+
+        count = 0
+
+        processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf")
+        model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf", torch_dtype=torch.float16, low_cpu_mem_usage=True, load_in_4bit=True)
+        model.to("cuda:0")
+        
 
         while True:
             clock.tick()
@@ -843,8 +830,12 @@ def game_loop(args):
             control = agent.run_step()
             control.manual_gear_shift = False
 
-            if image_queue
-
+            if count == max_len:
+                image = image_deque.pop()
+                image_process(model, processor, image)
+                count = 0
+            else:
+                count += 1
 
             world.player.apply_control(control)
 
