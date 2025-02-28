@@ -8,7 +8,7 @@ processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-mistral-7b-h
 model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf", torch_dtype=torch.float16, low_cpu_mem_usage=True, load_in_4bit=True)
 model.to("cuda:0")
 
-image = Image.open("out/004150.png")
+image = Image.open("out/cybertruck/004150.png")
 
 prompt = """
 When given instructions to finish some tasks, humans tend to reason in a hierarchical manner. Please decompose the natural language task description into a hierarchical structure based on logical relationships.
@@ -57,3 +57,6 @@ inputs = processor(image, prompt, return_tensors="pt").to("cuda:0")
 output = model.generate(**inputs, max_new_tokens=1000)
 
 print(processor.decode(output[0], skip_special_tokens=True))
+
+
+
