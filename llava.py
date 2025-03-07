@@ -8,36 +8,10 @@ processor = LlavaNextProcessor.from_pretrained("llava-hf/llava-v1.6-mistral-7b-h
 model = LlavaNextForConditionalGeneration.from_pretrained("llava-hf/llava-v1.6-mistral-7b-hf", torch_dtype=torch.float16, low_cpu_mem_usage=True, load_in_4bit=True)
 model.to("cuda:0")
 
-image = Image.open("out/cybertruck/004150.png")
+image = Image.open("../out/continuous_turn/00034879.png")
 
 prompt = """
-When given instructions to finish some tasks, humans tend to reason in a hierarchical manner. Please decompose the natural language task description into a hierarchical structure based on logical relationships.
-
-The root task is "How to ensure safety in this autonomous driving scenario?"
-
-Output Format:
-root task: 
-(1.1) summary of subtasks [task a, task c]
-    1.1.1. [task a]
-    1.1.2. [task c]
-    ...
-(1.2) summary of subtasks [task b]
-    1.2.1. [task b]
-    ...
-
-Requirements:
-Your answer should only be based on things that you can perceive in this driving scenario. You should not make any broad statements that are not related to the scene.
-Provide concrete tasks that can be executed by 
-
-
-
-Example output:
-How to ensure driving safety in this scenario?
-(1.1) avoid collision with other vehicles
-    1.1.1 avoid collision with vehicle A
-    1.1.2 avoid collision with vehicle B
-    ...
-(1.2) 
+You are given a picture depicting the front view of an autonomous vehicle. Analyze the given image and list only the traffic rules that are explicitly relevant to what is visible in the scene. Do not infer or assume the presence of elements that are not clearly depicted. Only mention rules that the autonomous vehicle must follow based on the visible road signs, signals, and markings.
 
         """
 
