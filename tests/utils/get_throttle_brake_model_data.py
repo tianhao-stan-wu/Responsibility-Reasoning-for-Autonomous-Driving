@@ -121,6 +121,9 @@ try:
 except ImportError:
     raise RuntimeError('cannot import numpy, make sure numpy package is installed')
 
+from tools import *
+import csv
+
 OBJECT_TO_COLOR = [
     (255, 255, 255),
     (128, 64, 128),
@@ -152,6 +155,7 @@ OBJECT_TO_COLOR = [
     (230, 150, 140),
     (180, 165, 180),
 ]
+
 
 # ==============================================================================
 # -- Global functions ----------------------------------------------------------
@@ -274,6 +278,9 @@ class World(object):
             self.player_max_speed = float(blueprint.get_attribute('speed').recommended_values[1])
             self.player_max_speed_fast = float(blueprint.get_attribute('speed').recommended_values[2])
 
+        blueprint_library = self.world.get_blueprint_library()
+        blueprint = blueprint_library.find('vehicle.tesla.model3')
+
         # Spawn the player.
         if self.player is not None:
             spawn_point = self.player.get_transform()
@@ -289,8 +296,7 @@ class World(object):
                 print('There are no spawn points available in your map/town.')
                 print('Please add some Vehicle Spawn Point to your UE5 scene.')
                 sys.exit(1)
-            spawn_points = self.map.get_spawn_points()
-            spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            spawn_point = set_location_from_spectator(self.world)
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
@@ -1248,6 +1254,71 @@ class CameraManager(object):
             image.save_to_disk('_out/%08d' % image.frame)
 
 
+def save_data(player, csv_filename, count):
+    # Ensure count is greater than or equal to 30 to start saving
+    if count >= 30:
+        # Get acceleration in world coordinates
+        accel = player.get_acceleration()
+
+        # Get vehicle yaw angle (in degrees) and convert to radians
+        yaw = math.radians(player.get_transform().rotation.yaw)
+
+        # Compute longitudinal acceleration
+        longitudinal_accel = accel.x * math.cos(yaw) + accel.y * math.sin(yaw)
+
+        print("Longitudinal Acceleration:", longitudinal_accel)
+
+        v = player.get_velocity()
+        speed = 3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2)
+        print("Speed:", speed)
+
+        control = player.get_control()
+
+        # Access control values
+        throttle = control.throttle
+        brake = control.brake
+
+        # Print the control values
+        print(f"Throttle: {throttle}, Brake: {brake}")
+
+        # Prepare the data to write to the CSV file
+        data = [longitudinal_accel, speed, throttle, brake]
+
+        # Write the data to the CSV file
+        try:
+            with open(csv_filename, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                # If it's the first time saving, write the header
+                if count == 30:
+                    writer.writerow(["Longitudinal Acceleration", "Speed", "Throttle", "Brake"])
+                
+                # Append the current data
+                writer.writerow(data)
+        except Exception as e:
+            print(f"Error while saving data: {e}")
+
+
+# def save_data(csv_filename):
+
+#     if len(acceleration_data) > discard:
+#         acceleration_data = acceleration_data[discard:]
+#         speed_data = speed_data[discard:]
+#         throttle_data = throttle_data[discard:]
+
+#     # Prepare data for writing
+#     data = zip(acceleration_data, speed_data, throttle_data)
+
+#     # Open the CSV file and write data
+#     with open(csv_filename, mode='w', newline='') as file:
+#         writer = csv.writer(file)
+
+#         # Write header
+#         writer.writerow(["Acceleration", "Speed", "Throttle"])
+
+#         # Write each row of data
+#         for row in data:
+#             writer.writerow(row)
+
 # ==============================================================================
 # -- game_loop() ---------------------------------------------------------------
 # ==============================================================================
@@ -1258,6 +1329,14 @@ def game_loop(args):
     pygame.font.init()
     world = None
     original_settings = None
+
+    csv_filename = "data/throttle.csv"
+
+
+    # Write header if the file does not exist
+    with open(csv_filename, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Acceleration", "Speed", "Throttle"]) 
 
     try:
         client = carla.Client(args.host, args.port)
@@ -1287,7 +1366,7 @@ def game_loop(args):
 
         hud = HUD(args.width, args.height)
         world = World(sim_world, hud, traffic_manager, args)
-        controller = KeyboardControl(world, args.autopilot)
+        # controller = KeyboardControl(world, args.autopilot)
 
         if args.sync:
             sim_world.tick()
@@ -1295,18 +1374,33 @@ def game_loop(args):
             sim_world.wait_for_tick()
 
         clock = pygame.time.Clock()
+
+        control = carla.VehicleControl()
+        control.throttle = 1
+
+        count = 0
+
         while True:
             if args.sync:
                 sim_world.tick()
             clock.tick_busy_loop(60)
-            if controller.parse_events(client, world, clock, args.sync):
-                return
+            # if controller.parse_events(client, world, clock, args.sync):
+            #     return
+
+            world.player.apply_control(control)
+
+            count += 1
+            if count % 100 == 0:
+                control.throttle = random.uniform(0, 1)
+
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
 
-    finally:
+            save_data(world.player, csv_filename, count)
 
+    finally:
+        
         if original_settings:
             sim_world.apply_settings(original_settings)
 
@@ -1372,6 +1466,7 @@ def main():
         game_loop(args)
 
     except KeyboardInterrupt:
+
         print('\nCancelled by user. Bye!')
 
 
