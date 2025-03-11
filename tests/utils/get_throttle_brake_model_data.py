@@ -1282,18 +1282,15 @@ def save_data(player, csv_filename, count):
         print(f"Throttle: {throttle}, Brake: {brake}")
 
         # Prepare the data to write to the CSV file
-        data = [longitudinal_accel, speed, throttle, brake]
+        data = [longitudinal_accel, speed, throttles]
 
         # Write the data to the CSV file
         try:
-            with open(csv_filename, mode='a', newline='') as file:
-                writer = csv.writer(file)
-                # If it's the first time saving, write the header
-                if count == 30:
-                    writer.writerow(["Longitudinal Acceleration", "Speed", "Throttle", "Brake"])
-                
+            with open(csv_filename, mode='a', newline='') as file:  
+                if count >= 40:
+                    writer = csv.writer(file)
                 # Append the current data
-                writer.writerow(data)
+                    writer.writerow(data)
         except Exception as e:
             print(f"Error while saving data: {e}")
 
@@ -1390,7 +1387,7 @@ def game_loop(args):
             world.player.apply_control(control)
 
             count += 1
-            if count % 100 == 0:
+            if count >= 50 and count % 10 == 0:
                 control.throttle = random.uniform(0, 1)
 
             world.tick(clock)
