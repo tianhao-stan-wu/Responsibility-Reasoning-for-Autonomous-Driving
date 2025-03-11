@@ -744,6 +744,7 @@ def game_loop(args):
 
         world = World(client.get_world(), hud, args, spawn_point, blueprint)
         controller = KeyboardControl(world)
+
         if args.agent == "Basic":
             agent = BasicAgent(world.player, 30)
             agent.follow_speed_limits(True)
@@ -761,22 +762,43 @@ def game_loop(args):
         # destination = random.choice(spawn_points).location
         agent.set_destination(destination.location)
 
-        list_actor = world.world.get_actors()
-        for actor_ in list_actor:
-            if isinstance(actor_, carla.TrafficLight):
-                actor_.set_state(carla.TrafficLightState.Green) 
-                actor_.set_green_time(1000.0)
+        # list_actor = world.world.get_actors()
+        # for actor_ in list_actor:
+        #     if isinstance(actor_, carla.TrafficLight):
+        #         actor_.set_state(carla.TrafficLightState.Green) 
+        #         actor_.set_green_time(1000.0)
 
         clock = pygame.time.Clock()
 
-        camera_init_trans = world.camera_manager._camera_transforms[1][0]
-        camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
-        camera_bp.set_attribute("image_size_x",str(1280))
-        camera_bp.set_attribute("image_size_y",str(720))
-        camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
-        camera.listen(image_queue.put)
+        # camera_init_trans = world.camera_manager._camera_transforms[1][0]
+        # camera_bp = world.world.get_blueprint_library().find('sensor.camera.rgb')
+        # camera_bp.set_attribute("image_size_x",str(1280))
+        # camera_bp.set_attribute("image_size_y",str(720))
+        # camera = world.world.spawn_actor(camera_bp, camera_init_trans, attach_to=world.player)
+        # camera.listen(image_queue.put)
+
+        # waypoints = world.map.generate_waypoints(1)
+        # for w in waypoints:
+            # world.world.debug.draw_string(w.transform.location, 'O', draw_shadow=False,
+            #                                    color=carla.Color(r=255, g=0, b=0), life_time=120.0,
+            #                                    persistent_lines=True)
+
+        # planned_path = agent.get_local_planner()._waypoints_queue
+
+        # Display waypoints in the trajectory
+        # for wp in planned_path:
+        #     print(f"Planned Waypoint at {wp[0].transform.location}")
+        #     world.world.debug.draw_string(wp[0].transform.location, 'O', draw_shadow=False,
+        #                                        color=carla.Color(r=255, g=0, b=0), life_time=30.0,
+        #                                        persistent_lines=True)
+
+        count = 0
 
         while True:
+
+            count += 1
+            if(count %100 == 0):
+                print(count/100)
             clock.tick()
             if args.sync:
                 world.world.tick()
@@ -799,18 +821,30 @@ def game_loop(args):
                     break
 
             control = agent.run_step()
+            # print("")
+            # print("throttle", control.throttle)
+            # print("brake", control.brake)
+            # print("steer", control.steer)
+
+            # speed_limit = world.player.get_speed_limit()
+            # todo: use VLM to have constraints
+
+            # todo: extract constraints into function call
+
+            
+
             control.manual_gear_shift = False
             world.player.apply_control(control)
 
 
     finally:
 
-        print('saving images...')
-        image_list = list(image_queue.queue)
-        queue_size = len(image_list)
-        selected_images = [image_list[i] for i in range(0, queue_size, 10)]
-        for image in selected_images:
-            image.save_to_disk(save_path + '%08d' % image.frame)
+        # print('saving images...')
+        # image_list = list(image_queue.queue)
+        # queue_size = len(image_list)
+        # selected_images = [image_list[i] for i in range(0, queue_size, 10)]
+        # for image in selected_images:
+        #     image.save_to_disk(save_path + '%08d' % image.frame)
 
         if world is not None:
             settings = world.world.get_settings()

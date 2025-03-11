@@ -1256,17 +1256,17 @@ class CameraManager(object):
 
 def save_data(player, csv_filename, count):
     # Ensure count is greater than or equal to 30 to start saving
-    if count >= 30:
+    if count >= 200:
         # Get acceleration in world coordinates
         accel = player.get_acceleration()
 
         # Get vehicle yaw angle (in degrees) and convert to radians
         yaw = math.radians(player.get_transform().rotation.yaw)
 
-        # Compute longitudinal acceleration
+        # # Compute longitudinal acceleration
         longitudinal_accel = accel.x * math.cos(yaw) + accel.y * math.sin(yaw)
 
-        print("Longitudinal Acceleration:", longitudinal_accel)
+        print("Acceleration:", longitudinal_accel)
 
         v = player.get_velocity()
         speed = 3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2)
@@ -1282,12 +1282,12 @@ def save_data(player, csv_filename, count):
         print(f"Throttle: {throttle}, Brake: {brake}")
 
         # Prepare the data to write to the CSV file
-        data = [longitudinal_accel, speed, throttles]
+        data = [longitudinal_accel, speed, brake]
 
         # Write the data to the CSV file
         try:
             with open(csv_filename, mode='a', newline='') as file:  
-                if count >= 40:
+                # if count >= 100:
                     writer = csv.writer(file)
                 # Append the current data
                     writer.writerow(data)
@@ -1327,13 +1327,13 @@ def game_loop(args):
     world = None
     original_settings = None
 
-    csv_filename = "data/throttle.csv"
+    csv_filename = "data/brake.csv"
 
 
     # Write header if the file does not exist
     with open(csv_filename, mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["Acceleration", "Speed", "Throttle"]) 
+        writer.writerow(["Acceleration", "Speed", "Brake"]) 
 
     try:
         client = carla.Client(args.host, args.port)
@@ -1373,6 +1373,7 @@ def game_loop(args):
         clock = pygame.time.Clock()
 
         control = carla.VehicleControl()
+        
         control.throttle = 1
 
         count = 0
@@ -1387,8 +1388,9 @@ def game_loop(args):
             world.player.apply_control(control)
 
             count += 1
-            if count >= 50 and count % 10 == 0:
-                control.throttle = random.uniform(0, 1)
+            if count == 200:
+                control.brake = 0.1
+                control.throttle = 0
 
             world.tick(clock)
             world.render(display)
