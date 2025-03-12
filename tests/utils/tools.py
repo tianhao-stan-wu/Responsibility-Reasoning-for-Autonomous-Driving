@@ -27,3 +27,8 @@ def get_tesla_blueprint(world):
     blueprint = blueprint_library.find('vehicle.tesla.model3')
 
     return blueprint
+
+
+client = carla.Client('localhost', 2000)
+client.set_timeout(5.0)
+set_location_from_spectator(client.get_world())

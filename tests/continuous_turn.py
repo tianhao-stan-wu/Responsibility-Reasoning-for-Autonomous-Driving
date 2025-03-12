@@ -39,6 +39,7 @@ except ImportError:
 # ==============================================================================
 try:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/PythonAPI/carla')
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/CBF_CLF')
 except IndexError:
     pass
 
@@ -49,8 +50,9 @@ from agents.navigation.behavior_agent import BehaviorAgent  # pylint: disable=im
 from agents.navigation.basic_agent import BasicAgent  # pylint: disable=import-error
 from agents.navigation.constant_velocity_agent import ConstantVelocityAgent  # pylint: disable=import-error
 
-from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
+# from transformers import LlavaNextProcessor, LlavaNextForConditionalGeneration
 
+from control import get_control
 
 # ==============================================================================
 # -- Global functions ----------------------------------------------------------
@@ -691,6 +693,37 @@ class CameraManager(object):
 # ==============================================================================
 
 
+def steer_to_beta(steer):
+
+    # steer is between [-1, 1] to [-70, 70] degrees
+    steer = math.radians(steer*70)
+    # kinematic bicycle model
+    beta = math.atan((2.102/(2.102+1.553)) * math.tan(steer))
+
+    return beta
+
+
+def beta_to_steer(beta):
+
+    steer = math.atan(math.tan(beta)*((2.102+1.553)/2.102))
+
+    steer = math.degrees(steer) / 70
+
+    return steer
+
+
+def get_throttle_brake(acc):
+
+    # throttle brake guaranteed to be within [0,1] by control bounds in qp
+    if acc >= -5:
+        throttle = (acc+5)/14
+        brake = 0
+    else:
+        throttle = 0
+        brake = (acc+5)/(-1 * 14)
+
+    return throttle, brake
+
 def game_loop(args):
     """
     Main loop of the simulation. It handles updating all the HUD information,
@@ -724,7 +757,7 @@ def game_loop(args):
             print("In synchronous mode")
             settings = sim_world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = 0.05
+            settings.fixed_delta_seconds = 0.02
             sim_world.apply_settings(settings)
 
             traffic_manager.set_synchronous_mode(True)
@@ -793,12 +826,12 @@ def game_loop(args):
         #                                        persistent_lines=True)
 
         count = 0
+        legnth = None
+        acc = None
+        beta = None
 
         while True:
 
-            count += 1
-            if(count %100 == 0):
-                print(count/100)
             clock.tick()
             if args.sync:
                 world.world.tick()
@@ -821,17 +854,63 @@ def game_loop(args):
                     break
 
             control = agent.run_step()
-            # print("")
-            # print("throttle", control.throttle)
-            # print("brake", control.brake)
-            # print("steer", control.steer)
+            
+            if count == 0:
+                # get reference control from simulator
+                steer_ref = control.steer
+                print("steer_ref", steer_ref)
+                beta_ref = steer_to_beta(steer_ref)
+                accel = world.player.get_acceleration()
+                yaw = math.radians(world.player.get_transform().rotation.yaw)
+                acc_ref = accel.x * math.cos(yaw) + accel.y * math.sin(yaw)
+                u_ref = np.array([acc_ref, beta_ref])
 
-            # speed_limit = world.player.get_speed_limit()
-            # todo: use VLM to have constraints
+                # get x0 current state
+                transform = world.player.get_transform()  # Get transform (location & rotation)
+                location = transform.location  # Extract location
+                velocity = world.player.get_velocity()
 
-            # todo: extract constraints into function call
+                x = location.x
+                y = location.y
+                theta = yaw
+                v = 3.6 * math.sqrt(velocity.x**2 + velocity.y**2)
+                print(x,y,theta, v)
+
+                x0 = np.array([[x, y, theta, v]]).T
+
+                params = {
+                    'obstacle': {
+                        'xo':-45,
+                        'yo':48,
+                        'rsafe':4
+                    },
+                    'speed':{
+                        'target_speed': 15
+                    }
+                }
+
+                ut, time_steps = get_control(x0, params, u_ref)
+                acc = ut[0,:]
+                beta = ut[1,:]
+                length = len(acc)
+
+                # for i in range(10):
+                #     print(beta[i])
+                #     print(acc[i])
+
+            steer = beta_to_steer(beta[count])
+            print("steer", steer)
+            throttle, brake = get_throttle_brake(acc[count])
+
+            control.throttle = throttle
+            control.brake = brake
+            control.steer = steer
 
             
+            if count == length - 1:
+                count = 0
+            else:
+                count += 1
 
             control.manual_gear_shift = False
             world.player.apply_control(control)

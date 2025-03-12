@@ -41,7 +41,7 @@ def get_control(x0, params):
 
     qp = ccq.CbfClfQp(ds, QPoption)
 
-    T = 1
+    T = 5
     dt = .05
     
     time_steps = int(np.ceil(T / dt))
@@ -142,19 +142,17 @@ def show_three_plots(params, xt, ut, dt, T, show=1, save=0):
 
 params = {
     'obstacle': {
-        'xo':2,
-        'yo':2,
-        'rsafe':2.1
+        'xo':-45,
+        'yo':48,
+        'rsafe':4
     },
     'speed':{
-        'target_speed': 3
+        'target_speed': 15
     }
 }
 
-xt, ut, dt, T = get_control(np.array([[0, 0, 0, 2]]).T, params)
+xt, ut, dt, T = get_control(np.array([[-45, 60, np.pi/2*3, 0]]).T, params)
 # Call the function to display all three plots together
 show_three_plots(params, xt, ut, dt, T)
 
-
-
-
+print(ut[:,0])
