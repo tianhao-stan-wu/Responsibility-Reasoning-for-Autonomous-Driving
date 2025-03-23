@@ -1,14 +1,23 @@
-from carla_utils_auto import *
 import csv
+import sys
+import os
+
+# sys.path.append("/home/twu/Desktop/Responsibility-Reasoning-for-Autonomous-Driving/PythonAPI/carla")
+try:
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) + '/PythonAPI/carla')
+except:
+    print("fail to add path")
+
+from carla_utils_auto import *
 
 
-def save_data(csv_filename, Frx, v_x, pwm):
+def save_data(csv_filename, acc_x, v_x, pwm):
     with open(csv_filename, mode='a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow([Frx, v_x, pwm])
+        writer.writerow([acc_x, v_x, pwm])
 
 
-def get_pwm(throttle, brake)
+def get_pwm(throttle, brake):
     
     if throttle > 0:
         return throttle
@@ -41,7 +50,7 @@ def game_loop(args):
 
     with open(csv_filename, mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["Frx", "v_x", "pwm"]) 
+        writer.writerow(["acc_x", "v_x", "pwm"]) 
 
     try:
         if args.seed:
@@ -87,6 +96,11 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
+        physics_control = world.player.get_physics_control()
+
+        # Extract mass
+        mass = physics_control.mass
+
         while True:
             clock.tick()
             if args.sync:
@@ -115,11 +129,15 @@ def game_loop(args):
 
             # check x axis aligns with the vehicle's heading
             acc_x = world.player.get_acceleration().x
-            Frx = acc_x * mass
+            # Frx = acc_x * mass
             v_x = world.player.get_velocity().x
             pwm = get_pwm(control.throttle, control.brake)
 
-            save_data(Frx, v_x, pwm)
+            print("acc_x", acc_x)
+            print("v_x", v_x)
+            print()
+
+            save_data(csv_filename, acc_x, v_x, pwm)
 
 
     finally:
