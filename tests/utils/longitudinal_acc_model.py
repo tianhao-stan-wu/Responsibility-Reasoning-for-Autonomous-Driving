@@ -100,6 +100,7 @@ def game_loop(args):
 
         # Extract mass
         mass = physics_control.mass
+        print("mass", mass)
 
         while True:
             clock.tick()
@@ -128,9 +129,19 @@ def game_loop(args):
             world.player.apply_control(control)
 
             # check x axis aligns with the vehicle's heading
-            acc_x = world.player.get_acceleration().x
-            # Frx = acc_x * mass
-            v_x = world.player.get_velocity().x
+            transform = world.player.get_transform()
+            yaw = math.radians(transform.rotation.yaw)  # Convert yaw to radians
+
+            # Get global velocity and acceleration
+            velocity = world.player.get_velocity()
+            acceleration = world.player.get_acceleration()
+
+            # Compute longitudinal (forward) velocity
+            v_x = velocity.x * math.cos(yaw) + velocity.y * math.sin(yaw)
+
+            # Compute longitudinal acceleration
+            acc_x = acceleration.x * math.cos(yaw) + acceleration.y * math.sin(yaw)
+
             pwm = get_pwm(control.throttle, control.brake)
 
             print("acc_x", acc_x)
