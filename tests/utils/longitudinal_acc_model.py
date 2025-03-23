@@ -1,4 +1,4 @@
-from carla_utils import *
+from carla_utils_auto import *
 import csv
 
 
