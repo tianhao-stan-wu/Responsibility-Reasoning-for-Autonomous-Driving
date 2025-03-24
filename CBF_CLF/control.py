@@ -89,9 +89,9 @@ def get_control(x0, params, u_ref=None):
 
     # precomputed control bounds
     QPoption = ccq.CbfClfQpOptions()
-    QPoption.set_option('u_max', np.array([9, 1]))
-    QPoption.set_option('u_min', np.array([-19, -1]))
-    QPoption.set_option('clf_lambda', 5.0)
+    QPoption.set_option('u_max', np.array([12, 1]))
+    QPoption.set_option('u_min', np.array([-16, -1]))
+    QPoption.set_option('clf_lambda', 100.0)
     QPoption.set_option('cbf_gamma', 2.5)
     QPoption.set_option('weight_input', np.array([1.0]))
     QPoption.set_option('weight_slack', 2e-2)

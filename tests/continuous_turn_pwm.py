@@ -255,7 +255,8 @@ def game_loop(args):
                 x = location.x
                 y = location.y
                 theta = yaw
-                v = (velocity.x * math.cos(yaw) + velocity.y * math.sin(yaw)) * 3.6
+                # v = (velocity.x * math.cos(yaw) + velocity.y * math.sin(yaw)) * 3.6
+                v = 3.6 * math.sqrt(velocity.x**2 + velocity.y**2)
 
                 print(x,y,theta, v)
 

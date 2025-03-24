@@ -715,12 +715,12 @@ def beta_to_steer(beta):
 def get_throttle_brake(acc):
 
     # throttle brake guaranteed to be within [0,1] by control bounds in qp
-    if acc >= -5:
-        throttle = (acc+5)/14
+    if acc >= -2:
+        throttle = (acc+2)/14
         brake = 0
     else:
         throttle = 0
-        brake = (acc+5)/(-1 * 14)
+        brake = (acc+2)/(-1 * 14)
 
     return throttle, brake
 
@@ -874,18 +874,19 @@ def game_loop(args):
                 y = location.y
                 theta = yaw
                 v = 3.6 * math.sqrt(velocity.x**2 + velocity.y**2)
+                # v = (velocity.x * math.cos(yaw) + velocity.y * math.sin(yaw)) * 3.6
                 print(x,y,theta, v)
 
                 x0 = np.array([[x, y, theta, v]]).T
 
                 params = {
-                    'obstacle': {
-                        'xo':-45,
-                        'yo':48,
-                        'rsafe':4
-                    },
+                    # 'obstacle': {
+                    #     'xo':-45,
+                    #     'yo':48,
+                    #     'rsafe':4
+                    # },
                     'speed':{
-                        'target_speed': 15
+                        'target_speed': 50
                     }
                 }
 
