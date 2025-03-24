@@ -9,6 +9,7 @@ except:
     print("fail to add path")
 
 from carla_utils_auto import *
+from tools import set_location_from_spectator
 
 
 def save_data(csv_filename, acc_x, v_x, pwm):
@@ -52,6 +53,7 @@ def game_loop(args):
         writer = csv.writer(file)
         writer.writerow(["acc_x", "v_x", "pwm"]) 
 
+
     try:
         if args.seed:
             random.seed(args.seed)
@@ -76,6 +78,8 @@ def game_loop(args):
 
         hud = HUD(args.width, args.height)
         world = World(client.get_world(), hud, args)
+
+        spawn_point = set_location_from_spectator(world.world)
         controller = KeyboardControl(world)
         if args.agent == "Basic":
             agent = BasicAgent(world.player, 30)
@@ -101,6 +105,7 @@ def game_loop(args):
         # Extract mass
         mass = physics_control.mass
         print("mass", mass)
+        
 
         while True:
             clock.tick()
@@ -137,7 +142,7 @@ def game_loop(args):
             acceleration = world.player.get_acceleration()
 
             # Compute longitudinal (forward) velocity
-            v_x = velocity.x * math.cos(yaw) + velocity.y * math.sin(yaw)
+            v_x = (velocity.x * math.cos(yaw) + velocity.y * math.sin(yaw)) * 3.6
 
             # Compute longitudinal acceleration
             acc_x = acceleration.x * math.cos(yaw) + acceleration.y * math.sin(yaw)

@@ -4,7 +4,8 @@ import time
 # Connect to CARLA
 client = carla.Client('localhost', 2000)
 client.set_timeout(10.0)
-world = client.get_world()
+# world = client.get_world()
+world = client.load_world('Town04')
 
 actors = world.get_actors()
 
