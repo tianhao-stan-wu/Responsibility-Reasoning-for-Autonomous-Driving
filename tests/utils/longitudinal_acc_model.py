@@ -49,9 +49,9 @@ def game_loop(args):
     v_x = []
     pwm = []
 
-    with open(csv_filename, mode="w", newline="") as file:
-        writer = csv.writer(file)
-        writer.writerow(["acc_x", "v_x", "pwm"]) 
+    # with open(csv_filename, mode="w", newline="") as file:
+    #     writer = csv.writer(file)
+    #     writer.writerow(["acc_x", "v_x", "pwm"]) 
 
 
     try:
@@ -153,7 +153,7 @@ def game_loop(args):
             print("v_x", v_x)
             print()
 
-            save_data(csv_filename, acc_x, v_x, pwm)
+            # save_data(csv_filename, acc_x, v_x, pwm)
 
 
     finally:

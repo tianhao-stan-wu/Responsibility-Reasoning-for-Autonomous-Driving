@@ -147,7 +147,10 @@ class World(object):
                 sys.exit(1)
             spawn_points = self.map.get_spawn_points()
             spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
+            if args.spawn_point is not None and args.blueprint is not None:
+                self.player = self.world.try_spawn_actor(args.blueprint, args.spawn_point)    
+            else:
+                self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.modify_vehicle_physics(self.player)
 
         if self._args.sync:
