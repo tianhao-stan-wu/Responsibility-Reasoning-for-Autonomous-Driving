@@ -8,7 +8,7 @@ import math
 try:
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/PythonAPI/carla')
     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + '/CBF_CLF_toolbox')
-else:
+except:
     pass
 
 import kinematic_bicycle as kb
@@ -885,7 +885,7 @@ class FadingText(object):
 class HelpText(object):
     """Helper class to handle text output using pygame"""
     def __init__(self, font, width, height):
-        lines = __doc__.split('\n')
+        lines = ['', '']
         self.font = font
         self.line_space = 18
         self.dim = (780, len(lines) * self.line_space + 12)
@@ -1313,6 +1313,8 @@ def game_loop(args):
         hud = HUD(args.width, args.height)
 
         spawn_point = carla.Transform(carla.Location(x=-45.11823272705078, y=60.35600280761719, z=0.6000000238418579), carla.Rotation(pitch=0.0, yaw=-92.52740478515625, roll=0.0))
+        end_x=-45.10695266723633
+        end_y=-21.47856330871582
 
         blueprint_library = client.get_world().get_blueprint_library()
         blueprint = blueprint_library.find('vehicle.tesla.model3')
@@ -1350,6 +1352,7 @@ def game_loop(args):
             transform = world.player.get_transform()  # Get transform (location & rotation)
             location = transform.location  # Extract location
             velocity = world.player.get_velocity()
+            yaw = math.radians(world.player.get_transform().rotation.yaw)
 
             x = location.x
             y = location.y
@@ -1357,8 +1360,8 @@ def game_loop(args):
             v = 3.6 * math.sqrt(velocity.x**2 + velocity.y**2)
 
             start = np.array([x,y])
-            end = np.array([,])
-            v_limit = 10
+            end = np.array([end_x,end_y])
+            v_limit = 30
             d = 1
 
             x0 = np.array([x, y, theta, v])

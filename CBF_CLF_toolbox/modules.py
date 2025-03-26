@@ -41,8 +41,8 @@ class normal_straight:
         self.gamma = 3
         self.alpha2 = 3
 
-        self.u_max = np.array([5, 1], dtype=float)
-        self.u_min = np.array([-5, -1], dtype=float)
+        self.u_max = np.array([12, 1], dtype=float)
+        self.u_min = np.array([-16, -1], dtype=float)
         
 
     def define_CBF2(self):
