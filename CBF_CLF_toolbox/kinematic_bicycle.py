@@ -1,17 +1,23 @@
 '''
 =====================================
+Author  :  Tianhao Wu
+Email : twu4@andrew.cmu.edu
+=====================================
+adapted from
+=====================================
 Author  :  Muhan Zhao
 Date    :  Feb. 11, 2020
 Location:  UC San Diego, La Jolla, CA
 =====================================
 '''
+
 import numpy as np
 import sympy as sp
 from sympy import cos, sin, Max
 from numpy import pi
 
 from sympy.utilities.lambdify import lambdify
-
+import cvxpy as cp
 
 
 class KinematicBicycle:
@@ -19,6 +25,7 @@ class KinematicBicycle:
     Define the symbolic dynamic:    dx = f(x) + g(x) * u
     lr: distances of the rear axles from the CoM
     lf: distances of the front axles from the CoM
+    Carla model: tesla model3
     """
     def __init__(self):
 
@@ -44,16 +51,3 @@ class KinematicBicycle:
         return f, g
 
 
-
-class straight:
-    """
-    drive straight module
-    """
-    def __init__(self, start, end, v_limit):
-
-        self.start = start
-        self.end = end
-        self.v_limit = v_limit
-
-        model = KinematicBicycle()
-        

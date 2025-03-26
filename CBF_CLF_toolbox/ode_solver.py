@@ -15,6 +15,10 @@ class OdeSolver:
         # print(f"g(x) shape: {self.g(x).shape}")
         # print(f"u shape before reshape: {np.atleast_2d(u).shape}")
 
+        # print("in solver")
+        # # print(self.f(x))
+        # print(x)
+
         return self.f(x) + self.g(x) @ np.atleast_2d(u).T
 
     def time_marching(self, x, u):
