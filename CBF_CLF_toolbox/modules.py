@@ -58,6 +58,8 @@ class normal_straight:
         den = sp.sqrt((x_e - x_s) ** 2 + (y_e - y_s) ** 2)
         distance_sq = (num / den) ** 2
 
+        # print("dis_sq", distance_sq)
+
         # Define the CBF h_d = d^2 - distance^2
         cbf = self.d**2 - distance_sq
         return cbf
@@ -93,6 +95,7 @@ class normal_straight:
 
         h1 = self.cbf1(x)
         h2 = self.cbf2(x)
+        # print("cbf2 value:", h2)
 
         # Define control input variables (acceleration and steering)
         u = cp.Variable(self.udim)

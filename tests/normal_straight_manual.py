@@ -43,6 +43,9 @@ def game_loop(args):
     world = None
     original_settings = None
 
+    client = carla.Client(args.host, args.port)
+    client.set_timeout(2000.0)
+
     # change init args here
     args.sync = True
     spawn_point = carla.Transform(carla.Location(x=-45.11823272705078, y=60.35600280761719, z=0.6000000238418579), carla.Rotation(pitch=0.0, yaw=-92.52740478515625, roll=0.0))
@@ -53,14 +56,14 @@ def game_loop(args):
     args.spawn_point = spawn_point
     args.blueprint = blueprint
 
+    start_x=-45.11823272705078
+    start_y=60.35600280761719
     end_x=-45.10695266723633
     end_y=-21.47856330871582
 
 
     try:
-        client = carla.Client(args.host, args.port)
-        client.set_timeout(2000.0)
-
+        
         sim_world = client.get_world()
         traffic_manager = client.get_trafficmanager()
         if args.sync:
@@ -113,13 +116,12 @@ def game_loop(args):
             acc_ref = get_acc(control.throttle, control.brake)
             u_ref = np.array([acc_ref, beta_ref])
 
+            x0 = get_state(world)
 
-            start = np.array([x,y])
+            start = np.array([start_x,start_y])
             end = np.array([end_x,end_y])
             v_limit = 30
             d = 1
-
-            x0 = get_state(world)
 
             module = normal_straight(start, end, v_limit, d)
             u = module.solve(x0, u_ref)
@@ -127,6 +129,8 @@ def game_loop(args):
             u_safe = carla.VehicleControl()
             u_safe.throttle, u_safe.brake = get_throttle_brake(u[0])
             u_safe.steer = beta_to_steer(u[1])
+
+            # print(f"steer_ref: {steer_ref}, beta_ref: {beta_ref}, beta: {u[1]}, steer: {u_safe.steer}")
 
             world.player.apply_control(u_safe)
 
