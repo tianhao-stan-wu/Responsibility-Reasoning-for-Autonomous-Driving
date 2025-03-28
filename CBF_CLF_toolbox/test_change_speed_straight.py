@@ -5,15 +5,16 @@ import math
 
 import matplotlib.pyplot as plt
 
-from modules import *
+from drive_modules import *
 
 
 start = np.array([0,0])
-end = np.array([10,10])
+end = np.array([30,0])
 v0 = 5
-vd = 10
-d = 3
-module = change_speed_straight(start, end, v0, vd, d)
+vd = 50
+v_limit = 20
+d = 1
+module = change_speed_straight(start, end, v0, vd, v_limit, d)
 
 T = 3
 dt = .02

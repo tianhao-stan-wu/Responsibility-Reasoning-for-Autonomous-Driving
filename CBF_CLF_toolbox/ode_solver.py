@@ -1,3 +1,12 @@
+'''
+=====================================
+Author  :  Muhan Zhao
+Date    :  Feb. 11, 2020
+Location:  UC San Diego, La Jolla, CA
+=====================================
+'''
+
+
 import numpy as np
 
 

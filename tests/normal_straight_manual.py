@@ -12,7 +12,6 @@ except:
 import kinematic_bicycle as kb
 import ode_solver
 from modules import normal_straight, change_speed_straight
-from get_control import straight
 
 from utils.unit_converter import *
 from utils.carla_utils_manual import *

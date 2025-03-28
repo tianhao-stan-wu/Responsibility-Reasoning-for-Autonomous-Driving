@@ -1,3 +1,11 @@
+'''
+=====================================
+Author  :  Tianhao Wu
+Email : twu4@andrew.cmu.edu
+=====================================
+'''
+
+
 from kinematic_bicycle import KinematicBicycle
 import numpy as np
 import sympy as sp
@@ -28,7 +36,9 @@ class normal_straight:
         self.f = self.model.f
         self.g = self.model.g
 
+        # cbf1 ensures v < speed_limit
         self.cbf1_symbolic = self.v_limit - self.x[3]
+        # cbf2 ensures lane keeping
         self.cbf2_symbolic = self.define_CBF2()
 
         self.cbf1 = lambdify(np.array(self.x.T), self.cbf1_symbolic, 'numpy')
@@ -83,6 +93,10 @@ class normal_straight:
 
     def solve(self, x, u_ref):
         """
+        x: current state
+        u_ref: reference control input
+
+        objectives
         1. solve each cbf and get the constraints
         2. solve the qp
         """
@@ -123,12 +137,13 @@ class change_speed_straight:
     """
     drive straight module
     """
-    def __init__(self, start, end, v0, vd, d):
+    def __init__(self, start, end, v0, vd, v_limit, d):
 
         self.start = start
         self.end = end
+        self.v_limit = v_limit
         self.v0 = v0
-        self.vd = vd
+        self.vd = self.check_vd(vd)
         self.d = d
 
         self.model = KinematicBicycle()
@@ -143,9 +158,7 @@ class change_speed_straight:
         self.acc_min = self.compute_min_acceleration()
 
         self.cbf2_symbolic = self.define_CBF2()
-        
         self.cbf2 = lambdify(np.array(self.x.T), self.cbf2_symbolic, 'numpy')
-
         self.lf_cbf2, self.lg_cbf2 = self.lie_derivatives_calculator(self.cbf2_symbolic, self.f_symbolic, self.g_symbolic)
 
         # to be tuned
@@ -157,6 +170,18 @@ class change_speed_straight:
 
         self.update_u_max_min()
         
+
+    def check_vd(self, vd):
+
+        if vd > self.v_limit:
+            return self.v_limit
+
+        elif vd < 0:
+            return 0
+
+        else:
+            return vd
+
 
     def compute_min_acceleration(self):
         """
@@ -188,12 +213,21 @@ class change_speed_straight:
         Updates u_min such that u_min[0] is set to acc_min while preserving u_min[1].
         """
         if self.acc_min >= 0:
-            # print(self.u_min.dtype)
-            self.u_min[0] = self.acc_min
-            # print(self.u_min[0])
+            
+            if self.acc_min <= 12:
+                self.u_min[0] = self.acc_min
+        
+            else:
+                self.u_min[0] = 12
+
 
         elif self.acc_min < 0:
-            self.u_max[0] = self.acc_min
+
+            if self.acc_min >= -16:
+                self.u_max[0] = self.acc_min
+
+            else:
+                self.u_max[0] = -16
 
 
     def define_CBF2(self):
