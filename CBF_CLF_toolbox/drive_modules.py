@@ -16,7 +16,7 @@ from sympy.utilities.lambdify import lambdify
 import cvxpy as cp
 
 
-class normal_straight:
+class straight:
     """
     drive straight module
     """
@@ -48,8 +48,8 @@ class normal_straight:
         self.lf_cbf2, self.lg_cbf2 = self.lie_derivatives_calculator(self.cbf2_symbolic, self.f_symbolic, self.g_symbolic)
 
         # to be tuned
-        self.gamma = 3
-        self.alpha2 = 3
+        self.gamma1 = 5
+        self.gamma2 = 0.5
 
         self.u_max = np.array([12, 1], dtype=float)
         self.u_min = np.array([-16, -1], dtype=float)
@@ -119,8 +119,8 @@ class normal_straight:
 
         # Define CBF constraints
         constraints = [
-            Lf_cbf1 + Lg_cbf1 @ u + self.gamma * h1 >= 0,  # Velocity limit constraint
-            Lf_cbf2 + Lg_cbf2 @ u + self.alpha2 * h2 >= 0,   # Distance constraint
+            Lf_cbf1 + Lg_cbf1 @ u + self.gamma1 * h1 >= 0,  # Velocity limit constraint
+            Lf_cbf2 + Lg_cbf2 @ u + self.gamma2 * h2 >= 0,   # Distance constraint
             self.u_min <= u, u <= self.u_max,
         ]
 
@@ -128,59 +128,38 @@ class normal_straight:
         problem = cp.Problem(cp.Minimize(cost), constraints)
         problem.solve()
 
-        # Return the optimized control input
-        return u.value
+        if problem.status != 'infeasible':
+            u = u.value
+
+        else:
+            u = None
+            print('infeasible qp problem, return u None')
+
+        return u
 
 
 
-class change_speed_straight:
+class change_speed:
     """
     drive straight module
     """
-    def __init__(self, start, end, v0, vd, v_limit, d):
+    def __init__(self, start, end, v0, vd):
 
         self.start = start
         self.end = end
-        self.v_limit = v_limit
         self.v0 = v0
-        self.vd = self.check_vd(vd)
-        self.d = d
+        self.vd = vd
 
         self.model = KinematicBicycle()
         self.x = self.model.x
         self.udim = self.model.udim
 
-        self.f_symbolic = self.model.f_symbolic
-        self.g_symbolic = self.model.g_symbolic
-        self.f = self.model.f
-        self.g = self.model.g
-
         self.acc_min = self.compute_min_acceleration()
-
-        self.cbf2_symbolic = self.define_CBF2()
-        self.cbf2 = lambdify(np.array(self.x.T), self.cbf2_symbolic, 'numpy')
-        self.lf_cbf2, self.lg_cbf2 = self.lie_derivatives_calculator(self.cbf2_symbolic, self.f_symbolic, self.g_symbolic)
-
-        # to be tuned
-        self.gamma = 3
-        self.alpha2 = 3
 
         self.u_max = np.array([12, 1], dtype=float)
         self.u_min = np.array([-16, -1], dtype=float)
 
         self.update_u_max_min()
-        
-
-    def check_vd(self, vd):
-
-        if vd > self.v_limit:
-            return self.v_limit
-
-        elif vd < 0:
-            return 0
-
-        else:
-            return vd
 
 
     def compute_min_acceleration(self):
@@ -230,50 +209,7 @@ class change_speed_straight:
                 self.u_max[0] = -16
 
 
-    def define_CBF2(self):
-        """
-        Define the CBF that ensures the vehicle remains within distance d from the line.
-        """
-        x_s, y_s = self.start
-        x_e, y_e = self.end
-        x, y, _, _ = self.x  # Extract state variables
-
-        # Compute perpendicular distance to the line
-        num = (y_e - y_s) * x - (x_e - x_s) * y + x_e * y_s - y_e * x_s
-        den = sp.sqrt((x_e - x_s) ** 2 + (y_e - y_s) ** 2)
-        distance_sq = (num / den) ** 2
-
-        # Define the CBF h_d = d^2 - distance^2
-        cbf = self.d**2 - distance_sq
-        return cbf
-
-
-    def lie_derivatives_calculator(self, cbf_clf_symbolic, f_symbolic, g_symbolic):
-        """
-        Compute the Lie derivatives of CBF or CLF w.r.t to x
-        :return:
-        """
-        dx_cbf_clf_symbolic = sp.Matrix([cbf_clf_symbolic]).jacobian(self.x)  
-
-        self.lf_cbf_clf_symbolic = dx_cbf_clf_symbolic * f_symbolic
-        self.lg_cbf_clf_symbolic = dx_cbf_clf_symbolic * g_symbolic
-
-        lf = lambdify(np.array(self.x.T), self.lf_cbf_clf_symbolic, 'numpy')
-        lg = lambdify(np.array(self.x.T), self.lg_cbf_clf_symbolic, 'numpy')
-
-        return (lf,lg)
-
-
     def solve(self, x, u_ref):
-        """
-        1. solve each cbf and get the constraints
-        2. solve the qp
-        """
-
-        Lf_cbf2 = self.lf_cbf2(x)
-        Lg_cbf2 = self.lg_cbf2(x)
-
-        h2 = self.cbf2(x)
 
         # Define control input variables (acceleration and steering)
         u = cp.Variable(self.udim)
@@ -281,10 +217,7 @@ class change_speed_straight:
         # Define the cost function: minimize ||u - u_ref||^2
         cost = cp.norm(u - u_ref, 2)**2
 
-
-        # Define CBF constraints
         constraints = [
-            Lf_cbf2 + Lg_cbf2 @ u + self.alpha2 * h2 >= 0,   # Distance constraint
             self.u_min <= u, u <= self.u_max,
         ]
 
@@ -292,8 +225,14 @@ class change_speed_straight:
         problem = cp.Problem(cp.Minimize(cost), constraints)
         problem.solve()
 
-        # Return the optimized control input
-        return u.value
+        if problem.status != 'infeasible':
+            u = u.value
+
+        else:
+            u = None
+            print('infeasible qp problem, return u None')
+
+        return u
 
 
 

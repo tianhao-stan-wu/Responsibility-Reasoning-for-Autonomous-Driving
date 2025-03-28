@@ -11,18 +11,18 @@ except:
 
 import kinematic_bicycle as kb
 import ode_solver
-from modules import normal_straight, change_speed_straight
+from drive_modules import straight, change_speed
 
 from utils.unit_converter import *
 from utils.carla_utils_manual import *
 
 
-def get_state(world):
+def get_state(player):
 
-    transform = world.player.get_transform()  # Get transform (location & rotation)
+    transform = player.get_transform()  # Get transform (location & rotation)
     location = transform.location  # Extract location
-    velocity = world.player.get_velocity()
-    yaw = math.radians(world.player.get_transform().rotation.yaw)
+    velocity = player.get_velocity()
+    yaw = math.radians(player.get_transform().rotation.yaw)
 
     x = location.x
     y = location.y
@@ -115,23 +115,28 @@ def game_loop(args):
             acc_ref = get_acc(control.throttle, control.brake)
             u_ref = np.array([acc_ref, beta_ref])
 
-            x0 = get_state(world)
+            x0 = get_state(world.player)
 
             start = np.array([start_x,start_y])
             end = np.array([end_x,end_y])
-            v_limit = 30
-            d = 1
+            v0 = 0
+            vd = 40
 
-            module = normal_straight(start, end, v_limit, d)
+            module = change_speed(start, end, v0, vd)
             u = module.solve(x0, u_ref)
 
             u_safe = carla.VehicleControl()
-            u_safe.throttle, u_safe.brake = get_throttle_brake(u[0])
-            u_safe.steer = beta_to_steer(u[1])
 
-            # print(f"steer_ref: {steer_ref}, beta_ref: {beta_ref}, beta: {u[1]}, steer: {u_safe.steer}")
+            if u is None:
+                world.player.apply_control(control)
 
-            world.player.apply_control(u_safe)
+            else:
+                u_safe.throttle, u_safe.brake = get_throttle_brake(u[0])
+                u_safe.steer = beta_to_steer(u[1])
+
+                # print(f"steer_ref: {steer_ref}, beta_ref: {beta_ref}, beta: {u[1]}, steer: {u_safe.steer}")
+
+                world.player.apply_control(u_safe)
 
             world.tick(clock)
             world.render(display)
