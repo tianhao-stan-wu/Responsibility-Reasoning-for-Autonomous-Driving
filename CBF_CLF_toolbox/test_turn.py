@@ -7,18 +7,14 @@ import matplotlib.pyplot as plt
 
 from drive_modules import *
 
-
 start = np.array([0,0])
-end = np.array([30,0])
-v0 = 5
-vd = 50
-
-module = change_speed(start, end, v0, vd)
+end = np.array([-5,5])
+module = turn()
 
 T = 3
 dt = .02
-x0 = np.array([0, 0, 0, v0])
-u_ref = np.array([1, 0])
+x0 = np.array([0, 0, math.pi/2, 0])
+u_ref = np.array([3, 0.5])
 
 time_steps = int(np.ceil(T / dt))
 
@@ -43,7 +39,7 @@ for t in range(time_steps-1):
     # propagate the system with control u using RK4
     xt[:, t + 1] = ode_sol.time_marching(xt[:, t], u)
 
-    # print("t:", t, "   xt:", xt[:, t + 1])
+    # print(xt[:, t + 1])
 
 
 

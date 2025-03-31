@@ -10,7 +10,9 @@ from drive_modules import *
 
 start = np.array([0,0])
 end = np.array([10,10])
-module = normal_straight(start, end, 10, 1)
+v_limit = 10
+d = 1
+module = straight(start, end, v_limit, d)
 
 T = 3
 dt = .02

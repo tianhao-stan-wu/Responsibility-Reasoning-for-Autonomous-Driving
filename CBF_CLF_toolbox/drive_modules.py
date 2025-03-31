@@ -154,6 +154,11 @@ class change_speed:
         self.x = self.model.x
         self.udim = self.model.udim
 
+        self.f_symbolic = self.model.f_symbolic
+        self.g_symbolic = self.model.g_symbolic
+        self.f = self.model.f
+        self.g = self.model.g
+
         self.acc_min = self.compute_min_acceleration()
 
         self.u_max = np.array([12, 1], dtype=float)
@@ -233,6 +238,188 @@ class change_speed:
             print('infeasible qp problem, return u None')
 
         return u
+
+
+
+class turn:
+    """
+    drive straight module
+    """
+    def __init__(self):
+
+
+        self.model = KinematicBicycle()
+        self.x = self.model.x
+        self.udim = self.model.udim
+
+        self.f_symbolic = self.model.f_symbolic
+        self.g_symbolic = self.model.g_symbolic
+        self.f = self.model.f
+        self.g = self.model.g
+
+        self.u_max = np.array([12, 0.5], dtype=float)
+        self.u_min = np.array([-16, -0.5], dtype=float)
+
+
+    def solve(self, x, u_ref):
+
+        # Define control input variables (acceleration and steering)
+        u = cp.Variable(self.udim)
+
+        # Define the cost function: minimize ||u - u_ref||^2
+        cost = cp.norm(u - u_ref, 2)**2
+
+        constraints = [
+            self.u_min <= u, u <= self.u_max,
+        ]
+
+        # Solve the QP
+        problem = cp.Problem(cp.Minimize(cost), constraints)
+        problem.solve()
+
+        if problem.status != 'infeasible':
+            u = u.value
+
+        else:
+            u = None
+            print('infeasible qp problem, return u None')
+
+        return u
+
+
+
+class change_lane:
+    """
+    drive straight module
+    """
+    def __init__(self):
+
+
+        self.model = KinematicBicycle()
+        self.x = self.model.x
+        self.udim = self.model.udim
+
+        self.f_symbolic = self.model.f_symbolic
+        self.g_symbolic = self.model.g_symbolic
+        self.f = self.model.f
+        self.g = self.model.g
+
+        self.u_max = np.array([12, 0.5], dtype=float)
+        self.u_min = np.array([-16, -0.5], dtype=float)
+
+
+    def solve(self, x, u_ref):
+
+        # Define control input variables (acceleration and steering)
+        u = cp.Variable(self.udim)
+
+        # Define the cost function: minimize ||u - u_ref||^2
+        cost = cp.norm(u - u_ref, 2)**2
+
+        constraints = [
+            self.u_min <= u, u <= self.u_max,
+        ]
+
+        # Solve the QP
+        problem = cp.Problem(cp.Minimize(cost), constraints)
+        problem.solve()
+
+        if problem.status != 'infeasible':
+            u = u.value
+
+        else:
+            u = None
+            print('infeasible qp problem, return u None')
+
+        return u
+
+
+# class turn:
+#     """
+#     drive straight module
+#     """
+#     def __init__(self, end):
+
+#         self.end = end
+
+#         self.model = KinematicBicycle()
+#         self.x = self.model.x
+#         self.udim = self.model.udim
+
+#         self.f_symbolic = self.model.f_symbolic
+#         self.g_symbolic = self.model.g_symbolic
+#         self.f = self.model.f
+#         self.g = self.model.g
+
+#         self.clf_symbolic = (self.x[0]-self.end[0]) ** 2 + (self.x[1]-self.end[1]) ** 2 + self.x[3]
+
+#         self.clf = lambdify(np.array(self.x.T), self.clf_symbolic, 'numpy')
+
+#         self.lf_clf, self.lg_clf = self.lie_derivatives_calculator(self.clf_symbolic, self.f_symbolic, self.g_symbolic)
+
+#         # to be tuned
+#         self.lambda1 = 0.1
+#         self.slack = 0
+
+#         self.u_max = np.array([12, 1], dtype=float)
+#         self.u_min = np.array([-16, -1], dtype=float)
+
+
+#     def lie_derivatives_calculator(self, cbf_clf_symbolic, f_symbolic, g_symbolic):
+#         """
+#         Compute the Lie derivatives of CBF or CLF w.r.t to x
+#         :return:
+#         """
+#         dx_cbf_clf_symbolic = sp.Matrix([cbf_clf_symbolic]).jacobian(self.x) 
+
+#         print(dx_cbf_clf_symbolic) 
+
+#         self.lf_cbf_clf_symbolic = dx_cbf_clf_symbolic * f_symbolic
+#         self.lg_cbf_clf_symbolic = dx_cbf_clf_symbolic * g_symbolic
+
+#         print(self.lf_cbf_clf_symbolic)
+#         print(self.lg_cbf_clf_symbolic)
+
+#         lf = lambdify(np.array(self.x.T), self.lf_cbf_clf_symbolic, 'numpy')
+#         lg = lambdify(np.array(self.x.T), self.lg_cbf_clf_symbolic, 'numpy')
+
+#         return (lf,lg)
+
+
+#     def solve(self, x, u_ref):
+
+#         # Define control input variables (acceleration and steering)
+#         u = cp.Variable(self.udim)
+
+#         # Define the cost function: minimize ||u - u_ref||^2
+#         cost = cp.norm(u - u_ref, 2)**2
+
+#         Lf_clf = self.lf_clf(x)
+#         Lg_clf = self.lg_clf(x)
+
+#         V = self.clf(x)
+
+#         print('Lf_clf', Lf_clf)
+#         print('Lg_clf', Lg_clf)
+#         print('V', V)
+
+#         constraints = [
+#             Lf_clf + Lg_clf @ u + self.lambda1 * V <= self.slack,
+#             self.u_min <= u, u <= self.u_max,
+#         ]
+
+#         # Solve the QP
+#         problem = cp.Problem(cp.Minimize(cost), constraints)
+#         problem.solve()
+
+#         if problem.status != 'infeasible':
+#             u = u.value
+
+#         else:
+#             u = None
+#             print('infeasible qp problem, return u None')
+
+#         return u
 
 
 
