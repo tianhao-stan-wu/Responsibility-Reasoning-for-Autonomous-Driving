@@ -31,6 +31,11 @@ def get_state(player):
 
     return np.array([x, y, theta, v])
 
+
+def distance(a,b):
+
+    return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
+
 # ==============================================================================
 # -- game_loop() ---------------------------------------------------------------
 # ==============================================================================
@@ -59,6 +64,13 @@ def game_loop(args):
     start_y=60.35600280761719
     end_x=-45.10695266723633
     end_y=-21.47856330871582
+
+    # start_x=-44.84585189819336
+    # start_y=43.02368927001953
+    # end_x=-45.18675994873047
+    # end_y=42.54542922973633
+
+    relaxed = False
 
 
     try:
@@ -127,7 +139,11 @@ def game_loop(args):
 
             u_safe = carla.VehicleControl()
 
-            if u is None:
+            if distance(end, np.array([x0[0], x0[1]])) < 1:
+                relaxed = True
+                print("constraint relaxed")
+
+            if u is None or relaxed:
                 world.player.apply_control(control)
 
             else:

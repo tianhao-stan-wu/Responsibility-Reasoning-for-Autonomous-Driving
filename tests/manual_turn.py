@@ -11,7 +11,7 @@ except:
 
 import kinematic_bicycle as kb
 import ode_solver
-from drive_modules import straight, change_speed
+from drive_modules import straight, change_speed, turn
 
 from utils.unit_converter import *
 from utils.carla_utils_manual import *
@@ -32,6 +32,10 @@ def get_state(player):
     return np.array([x, y, theta, v])
 
 
+def distance(a,b):
+
+    return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
+
 # ==============================================================================
 # -- game_loop() ---------------------------------------------------------------
 # ==============================================================================
@@ -48,7 +52,7 @@ def game_loop(args):
 
     # change init args here
     args.sync = True
-    spawn_point = carla.Transform(carla.Location(x=-45.11823272705078, y=60.35600280761719, z=0.6000000238418579), carla.Rotation(pitch=0.0, yaw=-92.52740478515625, roll=0.0))
+    spawn_point = carla.Transform(carla.Location(x=-44.84585189819336, y=43.02368927001953, z=0.6000000238418579), carla.Rotation(pitch=0.0, yaw=-92.52740478515625, roll=0.0))
     
     blueprint_library = client.get_world().get_blueprint_library()
     blueprint = blueprint_library.find('vehicle.tesla.model3')
@@ -56,12 +60,8 @@ def game_loop(args):
     args.spawn_point = spawn_point
     args.blueprint = blueprint
 
-    start_x=-45.11823272705078
-    start_y=60.35600280761719
-    end_x=-45.10695266723633
-    end_y=-21.47856330871582
-
-    reach_target_speed = False
+    start = carla.Location(x=-44.84585189819336, y=43.02368927001953, z=1.6355788707733154)
+    end = carla.Location(x=-65.08895111083984, y=16.621280670166016, z=1.5414644479751587)
 
 
     try:
@@ -101,6 +101,8 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
+        module = turn(start, end, world.world)
+
         while True:
             if args.sync:
                 sim_world.tick()
@@ -119,31 +121,19 @@ def game_loop(args):
             u_ref = np.array([acc_ref, beta_ref])
 
             x0 = get_state(world.player)
-
-            start = np.array([start_x,start_y])
-            end = np.array([end_x,end_y])
-            v0 = 0
-            vd = 40
-
-            module = change_speed(start, end, v0, vd)
+        
             u = module.solve(x0, u_ref)
 
             u_safe = carla.VehicleControl()
 
-            if abs(x0[3]-vd) < 0.5:
-                reach_target_speed = True
-                print("reach target speed")
 
-            if u is None or reach_target_speed:
-                world.player.apply_control(control)
 
-            else:
-                u_safe.throttle, u_safe.brake = get_throttle_brake(u[0])
-                u_safe.steer = beta_to_steer(u[1])
+            u_safe.throttle, u_safe.brake = get_throttle_brake(u[0])
+            u_safe.steer = beta_to_steer(u[1])
 
-                # print(f"steer_ref: {steer_ref}, beta_ref: {beta_ref}, beta: {u[1]}, steer: {u_safe.steer}")
+            # print(f"steer_ref: {steer_ref}, beta_ref: {beta_ref}, beta: {u[1]}, steer: {u_safe.steer}")
 
-                world.player.apply_control(u_safe)
+            world.player.apply_control(u_safe)
 
             world.tick(clock)
             world.render(display)
