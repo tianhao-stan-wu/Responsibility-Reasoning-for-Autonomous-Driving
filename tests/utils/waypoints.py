@@ -25,11 +25,11 @@ def get_waypoints(world, start, end):
 
         if i % 10 == 0:
             world.debug.draw_string(w[0].transform.location, 'O', draw_shadow=False,
-            color=carla.Color(r=255, g=0, b=0), life_time=30.0,
+            color=carla.Color(r=255, g=0, b=0), life_time=10.0,
             persistent_lines=False)
         else:
             world.debug.draw_string(w[0].transform.location, 'O', draw_shadow=False,
-            color = carla.Color(r=0, g=0, b=255), life_time=30.0,
+            color = carla.Color(r=0, g=0, b=255), life_time=10.0,
             persistent_lines=False)
         i += 1
 
@@ -38,9 +38,12 @@ client = carla.Client("localhost", 2000)
 client.set_timeout(10)
 world = client.get_world()
 
-
+# change lane
 start = carla.Location(x=-66.99111938476562, y=16.450407028198242, z=1.5217187404632568)
 end = carla.Location(x=-82.24272918701172, y=13.077672004699707, z=2.1280815601348877)
+
+# start = carla.Location(x=-44.84585189819336, y=43.02368927001953, z=1.6355788707733154)
+# end = carla.Location(x=-65.08895111083984, y=16.621280670166016, z=1.5414644479751587)
 
 
 get_waypoints(world, start, end)

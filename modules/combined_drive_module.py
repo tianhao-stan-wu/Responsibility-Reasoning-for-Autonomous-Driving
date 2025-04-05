@@ -30,6 +30,132 @@ def distance(a,b):
 
 
 
+class combined_modules:
+    """
+    drive straight module
+    """
+    def __init__(self):
+
+        # modules that return cbf constraints
+        self.speed_limit = speed_limit()
+
+        self.u_max = np.array([12, 1], dtype=float)
+        self.u_min = np.array([-16, -1], dtype=float)
+
+
+
+    def solve(self, x, u_ref):
+        """
+        x: current state
+        u_ref: reference control input
+
+        objectives
+        1. solve each cbf and get the constraints
+        2. solve the qp
+        """
+
+        # Define control input variables (acceleration and steering)
+        u = cp.Variable(self.udim)
+
+        # Define the cost function: minimize ||u - u_ref||^2
+        cost = cp.norm(u - u_ref, 2)**2
+
+        # Define constraints
+        constraints = []
+
+
+
+
+
+        # Solve the QP
+        problem = cp.Problem(cp.Minimize(cost), constraints)
+        problem.solve()
+
+        if problem.status != 'infeasible':
+            u = u.value
+
+        else:
+            u = None
+            print('infeasible qp problem, return u None')
+
+        return u
+
+
+
+
+
+
+
+class speed_limit:
+    '''
+    This module ensures the speed never exceeds the specified speed limit
+    '''
+
+    def __init__(self):
+
+        self.model = KinematicBicycle()
+        self.x = self.model.x
+        self.udim = self.model.udim
+
+        self.f_symbolic = self.model.f_symbolic
+        self.g_symbolic = self.model.g_symbolic
+        self.f = self.model.f
+        self.g = self.model.g
+
+        # to be tuned
+        self.gamma1 = 5
+
+
+        self.v_limit = None
+        self.cbf1_symbolic = None
+
+        self.cbf1 = None
+        self.lf_cbf1 = None
+        self.lg_cbf1 = None
+
+        self.activated = False
+
+
+    def set_speed_limit(self, v_limit):
+
+        self.v_limit = v_limit
+        self.cbf1_symbolic = self.v_limit - self.x[3]
+        self.cbf1 = lambdify(np.array(self.x.T), self.cbf1_symbolic, 'numpy')
+
+        self.lf_cbf1, self.lg_cbf1 = self.lie_derivatives_calculator(self.cbf1_symbolic, self.f_symbolic, self.g_symbolic)
+        self.activated = True
+
+
+    def lie_derivatives_calculator(self, cbf_clf_symbolic, f_symbolic, g_symbolic):
+        """
+        Compute the Lie derivatives of CBF or CLF w.r.t to x
+        :return:
+        """
+        dx_cbf_clf_symbolic = sp.Matrix([cbf_clf_symbolic]).jacobian(self.x)  
+
+        self.lf_cbf_clf_symbolic = dx_cbf_clf_symbolic * f_symbolic
+        self.lg_cbf_clf_symbolic = dx_cbf_clf_symbolic * g_symbolic
+
+        lf = lambdify(np.array(self.x.T), self.lf_cbf_clf_symbolic, 'numpy')
+        lg = lambdify(np.array(self.x.T), self.lg_cbf_clf_symbolic, 'numpy')
+
+        return (lf,lg)
+
+
+    def get_constraint(self, x, u_ref):
+
+
+        Lf_cbf1 = self.lf_cbf1(x)
+        Lg_cbf1 = self.lg_cbf1(x)
+
+        h1 = self.cbf1(x)
+
+        # return params that define the constraint
+        # Lf_cbf1 + Lg_cbf1 @ u + self.gamma1 * h1 >= 0,  # Velocity limit constraint
+
+        return (Lf_cbf1, Lg_cbf1, self.gamma1, h1)
+
+
 class straight:
     """
     drive straight module
